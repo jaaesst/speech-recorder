@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎙️ Speech Recorder</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Sarabun:wght@300;400;600&display=swap');
+:root{--bg:#0d0d0d;--panel:#161616;--border:#2a2a2a;--accent:#00ff88;--text:#e8e8e8;--muted:#555;--rec:#ff3b3b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Sarabun',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:32px 16px;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,255,136,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
+.wrap{position:relative;z-index:1;width:100%;max-width:700px;}
+h1{font-family:'IBM Plex Mono',monospace;font-size:1.5rem;color:var(--accent);letter-spacing:.1em;text-shadow:0 0 24px rgba(0,255,136,.35);text-align:center;}
+.sub{font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--muted);text-align:center;margin-top:4px;margin-bottom:32px;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:18px;}
+.ctitle{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.ctitle::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);flex-shrink:0;}
+select,textarea{width:100%;background:#111;border:1px solid var(--border);color:var(--text);border-radius:7px;font-family:'Sarabun',sans-serif;font-size:.95rem;outline:none;transition:border-color .2s;}
+select{padding:8px 12px;cursor:pointer;margin-bottom:12px;}
+select:focus,textarea:focus{border-color:var(--accent);}
+.sliders{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.sl-label{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:5px;}
+.sl-label span:last-child{color:var(--accent);}
+input[type=range]{width:100%;-webkit-appearance:none;height:3px;background:var(--border);border-radius:2px;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);margin-top:-5px;cursor:pointer;}
+textarea{padding:13px;line-height:1.7;resize:vertical;min-height:130px;}
+textarea::placeholder{color:var(--muted);}
+.btns{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+button{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:8px;border:1px solid;font-family:'IBM Plex Mono',monospace;font-size:.8rem;letter-spacing:.04em;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.b-go{background:var(--rec);border-color:var(--rec);color:#fff;font-weight:700;}
+.b-go:hover{box-shadow:0 0 18px rgba(255,59,59,.45);}
+.b-go:disabled{opacity:.35;cursor:not-allowed;}
+.b-prev{background:transparent;border-color:var(--accent);color:var(--accent);font-weight:600;}
+.b-prev:hover:not(:disabled){background:rgba(0,255,136,.1);box-shadow:0 0 14px rgba(0,255,136,.3);}
+.b-prev:disabled{opacity:.35;cursor:not-allowed;}
+.b-prev.playing{background:var(--accent);color:#000;}
+.b-stop{background:transparent;border-color:var(--rec);color:var(--rec);}
+.b-stop:hover:not(:disabled){background:rgba(255,59,59,.1);}
+.b-stop:disabled{opacity:.3;cursor:not-allowed;}
+.b-ghost{background:transparent;border-color:var(--border);color:var(--muted);}
+.b-ghost:hover{border-color:var(--text);color:var(--text);}
+.statusbar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0e0e0e;border-radius:7px;margin-top:13px;font-family:'IBM Plex Mono',monospace;font-size:.74rem;color:var(--muted);min-height:38px;border:1px solid var(--border);}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--border);flex-shrink:0;}
+.dot.rec{background:var(--rec);box-shadow:0 0 8px var(--rec);animation:pulse .6s infinite alternate;}
+.dot.ok{background:var(--accent);box-shadow:0 0 8px var(--accent);}
+.dot.spin{background:#7c6af5;box-shadow:0 0 8px #7c6af5;animation:pulse .3s infinite alternate;}
+@keyframes pulse{to{transform:scale(1.5);opacity:.5}}
+canvas{width:100%;height:56px;border-radius:6px;background:#0e0e0e;display:block;margin-top:11px;border:1px solid var(--border);}
+.howto{background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.18);border-radius:8px;padding:12px 15px;margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:rgba(0,255,136,.75);line-height:1.9;}
+.howto strong{color:var(--accent);}
+.step{display:flex;gap:8px;align-items:flex-start;margin-bottom:2px;}
+.step-n{background:rgba(0,255,136,.2);border-radius:4px;padding:1px 6px;color:var(--accent);font-weight:600;flex-shrink:0;margin-top:1px;}
+.dl-list{display:flex;flex-direction:column;gap:9px;}
+.dl-item{display:flex;align-items:center;gap:10px;background:#131313;border:1px solid var(--border);border-radius:8px;padding:11px 14px;}
+.dl-name{font-family:'IBM Plex Mono',monospace;font-size:.74rem;color:var(--accent);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dl-meta{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--muted);white-space:nowrap;}
+.b-dl{background:transparent;border:1px solid var(--accent);border-radius:6px;color:var(--accent);padding:5px 12px;font-family:'IBM Plex Mono',monospace;font-size:.7rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:4px;}
+.b-dl:hover{background:rgba(0,255,136,.1);}
+.empty{text-align:center;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:.74rem;padding:18px;}
+.prog-wrap{display:none;margin-top:10px;}
+.prog-bg{background:var(--border);border-radius:2px;height:3px;}
+.prog-bar{height:3px;border-radius:2px;background:linear-gradient(to right,#7c6af5,var(--accent));width:0%;transition:width .15s;}
+.prog-txt{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--muted);margin-top:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎙 SPEECH RECORDER</h1>
+  <div class="sub">// 🔧 Robotic (no permission) + 💻 System voices → MP3</div>
+
+  <div class="card">
+    <div class="ctitle">Voice Settings</div>
+    <select id="vSel"><option>กำลังโหลด voices...</option></select>
+    <div class="sliders">
+      <div>
+        <div class="sl-label"><span>RATE</span><span id="rV">1.00</span></div>
+        <input type="range" id="rRate" min=".5" max="2" step=".05" value="1" oninput="rV.textContent=parseFloat(this.value).toFixed(2)">
+      </div>
+      <div>
+        <div class="sl-label"><span>PITCH</span><span id="pV">1.00</span></div>
+        <input type="range" id="rPitch" min=".5" max="2" step=".05" value="1" oninput="pV.textContent=parseFloat(this.value).toFixed(2)">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">Text to Speak</div>
+    <textarea id="txt" placeholder="พิมพ์ข้อความที่ต้องการให้พูด...&#10;&#10;ตัวอย่าง: สวัสดีครับ ยินดีต้อนรับ"></textarea>
+    <div class="btns">
+      <button class="b-prev" id="bPrev">🔊 PREVIEW</button>
+      <button class="b-go" id="bGo">⏺ RECORD</button>
+      <button class="b-stop" id="bStop" disabled>■ STOP</button>
+      <button class="b-ghost" onclick="txt.value='';setS('','พร้อมใช้งาน');stopWave()">✕ CLEAR</button>
+    </div>
+    <div class="statusbar">
+      <div class="dot" id="dot"></div>
+      <span id="sTxt">พร้อมใช้งาน</span>
+    </div>
+    <canvas id="cv"></canvas>
+    <div class="prog-wrap" id="progWrap">
+      <div class="prog-bg"><div class="prog-bar" id="progBar"></div></div>
+      <div class="prog-txt" id="progTxt">Encoding MP3...</div>
+    </div>
+    <div class="howto" id="howtoBox">
+      <div class="step"><span class="step-n">🔧</span><span>เสียง <strong>Robotic (meSpeak)</strong> = อัด MP3 ได้เลย <strong>ไม่ต้องขอ permission</strong></span></div>
+      <div class="step"><span class="step-n">💻</span><span>เสียง <strong>System</strong> = ต้อง Share tab audio (Desktop) / ไมค์ (มือถือ)</span></div>
+      <div class="step"><span class="step-n">🔊</span><span>กด <strong>PREVIEW</strong> ฟังก่อนได้ทุกเสียง</span></div>
+      <div class="step"><span class="step-n">⏺</span><span>กด <strong>RECORD</strong> → encode <strong>MP3</strong> → กด <strong>⬇ DL</strong> ใช้กับ TikTok</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ctitle">Recordings</div>
+    <div class="dl-list" id="dlList">
+      <div class="empty">// ยังไม่มีไฟล์ — กด SPEAK &amp; RECORD เพื่อเริ่ม</div>
+    </div>
+  </div>
+</div>
+
+<!-- lamejs MP3 encoder (MIT license, ~50KB) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+<!-- meSpeak.js — eSpeak in JS, robotic synth, generates WAV/PCM directly (no permission needed) -->
+<!-- Loads from jsdelivr. Works on GitHub Pages / any https host. Fails gracefully if blocked. -->
+<script src="https://cdn.jsdelivr.net/npm/mespeak@2.0.2/mespeak.min.js"></script>
+<script>
+// ── meSpeak setup (robotic voices) ────────────────────────────────
+// meSpeak generates a WAV file directly in JS → we can encode to MP3
+// without ANY recording permission. Available after config+voice load.
+let MESPEAK_READY = false;
+const MESPEAK_BASE = 'https://cdn.jsdelivr.net/npm/mespeak@2.0.2/';
+// Robotic voices to offer (eSpeak languages). 'en/en-us' reads Thai too (heavy accent).
+const MESPEAK_VOICES = [
+  { id:'en/en-us', label:'🔧 Robotic — English (US)' },
+  { id:'en/en',    label:'🔧 Robotic — English (UK)' },
+  { id:'de',       label:'🔧 Robotic — German' },
+  { id:'fr',       label:'🔧 Robotic — French' },
+  { id:'es',       label:'🔧 Robotic — Spanish' },
+];
+const mespeakLoaded = {}; // id -> true
+
+function initMeSpeak(){
+  if(typeof meSpeak === 'undefined'){ return; } // CDN blocked (e.g. local file) — skip
+  try {
+    meSpeak.loadConfig(MESPEAK_BASE + 'src/mespeak_config.json');
+    // Pre-load the first (default) robotic voice
+    meSpeak.loadVoice(MESPEAK_BASE + 'voices/' + MESPEAK_VOICES[0].id + '.json', (success, id) => {
+      if(success){
+        MESPEAK_READY = true;
+        mespeakLoaded[MESPEAK_VOICES[0].id] = true;
+        rebuildVoiceList();
+      }
+    });
+  } catch(e){ /* ignore */ }
+}
+
+// Ensure a meSpeak voice json is loaded before speaking
+function ensureMeSpeakVoice(id){
+  return new Promise((resolve)=>{
+    if(mespeakLoaded[id]){ resolve(true); return; }
+    meSpeak.loadVoice(MESPEAK_BASE + 'voices/' + id + '.json', (ok)=>{
+      if(ok) mespeakLoaded[id] = true;
+      resolve(ok);
+    });
+  });
+}
+
+// ── Browser Support Check ─────────────────────────────────────────
+const HAS_TTS = (typeof window.speechSynthesis !== 'undefined');
+const HAS_CAPTURE = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
+const HAS_MIC = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+// Method for SYSTEM voices: desktop → tab audio (clean), mobile → mic.
+const CAPTURE_MODE = (!IS_MOBILE && HAS_CAPTURE) ? 'tab' : (HAS_MIC ? 'mic' : 'none');
+
+function showSupportBanner(){
+  const ok = HAS_TTS && CAPTURE_MODE !== 'none';
+  const wrap = document.querySelector('.wrap');
+
+  if(ok && CAPTURE_MODE === 'mic'){
+    // Mobile info (not an error — just a tip)
+    const tip = document.createElement('div');
+    tip.style.cssText = 'background:rgba(124,106,245,.12);border:1px solid rgba(124,106,245,.45);border-radius:12px;padding:14px 18px;margin-bottom:18px;font-family:\'IBM Plex Mono\',monospace;font-size:.74rem;color:#b3a8ff;line-height:1.8;';
+    tip.innerHTML = `
+      <div style="font-weight:600;margin-bottom:6px;color:#c9bfff;">📱 โหมดมือถือ (Mic Capture)</div>
+      • <strong>เปิดลำโพงมือถือ</strong> — อย่าใช้หูฟัง<br>
+      • อยู่ในที่เงียบ ไมค์จะรับเสียง TTS จากลำโพง<br>
+      • กดอนุญาตใช้ <strong>ไมโครโฟน</strong> เมื่อถาม`;
+    wrap.insertBefore(tip, wrap.children[2]);
+    return true;
+  }
+
+  if(ok) return true;
+
+  const banner = document.createElement('div');
+  banner.style.cssText = 'background:rgba(255,107,53,.12);border:1px solid rgba(255,107,53,.5);border-radius:12px;padding:18px 20px;margin-bottom:18px;font-family:\'IBM Plex Mono\',monospace;font-size:.78rem;color:#ff6b35;line-height:1.8;';
+  let reason = '';
+  if(!HAS_TTS) reason += '• ไม่รองรับ System TTS<br>';
+  if(CAPTURE_MODE === 'none') reason += '• อัดเสียง System voice ไม่ได้<br>';
+  banner.innerHTML = `
+    <div style="font-weight:600;margin-bottom:8px;color:#ff8a5c;">⚠ ข้อจำกัดบางส่วน</div>
+    ${reason}
+    <hr style="border-color:rgba(255,107,53,.25);margin:10px 0;">
+    <strong style="color:#ffb38a;">ทางออก:</strong> ใช้เสียง <strong>🔧 Robotic (meSpeak)</strong> แทน — อัดเป็น MP3 ได้เลย ไม่ต้องขอ permission<br>
+    (meSpeak โหลดได้เมื่อเปิดผ่าน https:// เช่น GitHub Pages)`;
+  wrap.insertBefore(banner, wrap.children[2]);
+  return false;
+}
+
+const SUPPORTED = showSupportBanner();
+
+// Adjust how-to text for mic mode
+if(CAPTURE_MODE === 'mic'){
+  const box = document.getElementById('howtoBox');
+  if(box) box.innerHTML = `
+    <div class="step"><span class="step-n">🔧</span><span>เสียง <strong>Robotic</strong> = อัด MP3 ได้เลย <strong>ไม่ต้องขอไมค์</strong> (แนะนำบนมือถือ)</span></div>
+    <div class="step"><span class="step-n">💻</span><span>เสียง <strong>System</strong> = เปิดลำโพง ปิดหูฟัง อยู่ที่เงียบ + อนุญาตไมค์</span></div>
+    <div class="step"><span class="step-n">🔊</span><span>กด <strong>PREVIEW</strong> ฟังก่อน → <strong>RECORD</strong> อัด → <strong>⬇ DL</strong></span></div>`;
+}
+
+// ── Voices (combined: meSpeak robotic + system) ──────────────────
+const vSel = document.getElementById('vSel');
+let voices = [];
+
+function rebuildVoiceList(){
+  const prevValue = vSel.value;
+  vSel.innerHTML = '';
+
+  // Group 1: meSpeak robotic voices (if library loaded)
+  if(MESPEAK_READY){
+    const og = document.createElement('optgroup');
+    og.label = '🔧 Robotic (meSpeak · no permission)';
+    MESPEAK_VOICES.forEach(v=>{
+      const o = document.createElement('option');
+      o.value = 'mespeak:' + v.id;
+      o.textContent = v.label;
+      og.appendChild(o);
+    });
+    vSel.appendChild(og);
+  }
+
+  // Group 2: system voices
+  if(HAS_TTS){
+    voices = speechSynthesis.getVoices();
+    const th = voices.filter(v=>v.lang.startsWith('th'));
+    const ot = voices.filter(v=>!v.lang.startsWith('th'));
+    for(const [lbl,lst] of [['💻 System · 🇹🇭 Thai',th],['💻 System · Other',ot]]){
+      if(!lst.length) continue;
+      const og = document.createElement('optgroup'); og.label = lbl;
+      lst.forEach(v=>{
+        const o = document.createElement('option');
+        o.value = 'sys:' + voices.indexOf(v);
+        o.textContent = `${v.name} (${v.lang})`;
+        if(v.default && !MESPEAK_READY) o.selected = true;
+        og.appendChild(o);
+      });
+      vSel.appendChild(og);
+    }
+  }
+
+  if(!vSel.options.length){
+    vSel.innerHTML = '<option>ไม่พบเสียง</option>';
+  }
+
+  // restore selection if still present
+  if(prevValue){
+    for(const o of vSel.options){ if(o.value === prevValue){ vSel.value = prevValue; break; } }
+  }
+}
+
+// helper: parse current selection
+function getSelectedVoice(){
+  const val = vSel.value || '';
+  if(val.startsWith('mespeak:')) return { engine:'mespeak', id: val.slice(8) };
+  if(val.startsWith('sys:'))     return { engine:'system', idx: parseInt(val.slice(4)) };
+  return { engine:'none' };
+}
+
+function loadV(){ rebuildVoiceList(); }
+loadV();
+initMeSpeak();
+if(HAS_TTS && speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = loadV;
+
+// ── Wave ──────────────────────────────────────────────────────────
+const cv = document.getElementById('cv');
+const cx = cv.getContext('2d');
+let af, ph = 0, running = false;
+function resize(){ cv.width = cv.offsetWidth * devicePixelRatio; cv.height = 56 * devicePixelRatio; }
+function drawIdle(){
+  resize();
+  const s = devicePixelRatio, w = cv.offsetWidth, h = 56;
+  cx.setTransform(s,0,0,s,0,0);
+  cx.clearRect(0,0,w,h);
+  cx.strokeStyle='#222'; cx.lineWidth=1.5;
+  cx.beginPath(); cx.moveTo(0,h/2); cx.lineTo(w,h/2); cx.stroke();
+}
+function drawWave(col,amp){
+  resize();
+  const s = devicePixelRatio, w = cv.offsetWidth, mid = 28;
+  cx.setTransform(s,0,0,s,0,0);
+  cx.clearRect(0,0,w,56);
+  cx.strokeStyle=col; cx.lineWidth=2; cx.shadowBlur=9; cx.shadowColor=col;
+  cx.beginPath();
+  for(let x=0;x<w;x++){
+    const y=mid+Math.sin((x/w)*Math.PI*7+ph)*amp+Math.sin((x/w)*Math.PI*13+ph*1.5)*(amp*.3);
+    x===0?cx.moveTo(x,y):cx.lineTo(x,y);
+  }
+  cx.stroke(); cx.shadowBlur=0; ph+=.13;
+  af=requestAnimationFrame(()=>drawWave(col,amp));
+}
+function stopWave(){ cancelAnimationFrame(af); drawIdle(); }
+drawIdle();
+window.addEventListener('resize',()=>{ if(!running) drawIdle(); });
+
+// ── Status ────────────────────────────────────────────────────────
+const dot=document.getElementById('dot'), sTxt=document.getElementById('sTxt');
+function setS(cls,msg){ dot.className='dot '+cls; sTxt.textContent=msg; }
+
+// ── Encode: decode any audio (webm/wav ArrayBuffer) → MP3 ────────
+async function decodeToAudioBuffer(arrBuf){
+  const tmpCtx = new (window.AudioContext||window.webkitAudioContext)({ sampleRate: 44100 });
+  let audioBuf;
+  try {
+    audioBuf = await tmpCtx.decodeAudioData(arrBuf);
+  } catch(e) {
+    await tmpCtx.close();
+    throw new Error('decode_failed');
+  }
+  await tmpCtx.close();
+  return audioBuf;
+}
+
+async function audioBufferToMp3(audioBuf, onProgress){
+  const sampleRate = audioBuf.sampleRate;
+  const numCh = audioBuf.numberOfChannels;
+  const leftF  = audioBuf.getChannelData(0);
+  const rightF = numCh > 1 ? audioBuf.getChannelData(1) : audioBuf.getChannelData(0);
+  const len = leftF.length;
+
+  function f32ToI16(f32){ return Math.max(-32768, Math.min(32767, Math.round(f32 * 32767))); }
+  const leftI16  = new Int16Array(len);
+  const rightI16 = new Int16Array(len);
+  for(let i=0;i<len;i++){ leftI16[i]=f32ToI16(leftF[i]); rightI16[i]=f32ToI16(rightF[i]); }
+
+  const mp3enc = new lamejs.Mp3Encoder(2, sampleRate, 128);
+  const blockSize = 1152;
+  const mp3Parts = [];
+  let offset = 0;
+  while(offset < len){
+    const end = Math.min(offset + blockSize, len);
+    const mp3buf = mp3enc.encodeBuffer(leftI16.subarray(offset,end), rightI16.subarray(offset,end));
+    if(mp3buf.length > 0) mp3Parts.push(new Uint8Array(mp3buf));
+    offset = end;
+    if(onProgress) onProgress(offset / len);
+    if(offset % (blockSize * 100) === 0) await new Promise(r => setTimeout(r, 0));
+  }
+  const mp3end = mp3enc.flush();
+  if(mp3end.length > 0) mp3Parts.push(new Uint8Array(mp3end));
+
+  const totalBytes = mp3Parts.reduce((a,b)=>a+b.byteLength,0);
+  const mp3Buf = new Uint8Array(totalBytes);
+  let pos = 0;
+  for(const part of mp3Parts){ mp3Buf.set(part, pos); pos += part.byteLength; }
+  return new Blob([mp3Buf], { type: 'audio/mpeg' });
+}
+
+async function webmToMp3(webmBlob, onProgress){
+  const arrBuf = await webmBlob.arrayBuffer();
+  const audioBuf = await decodeToAudioBuffer(arrBuf);
+  return audioBufferToMp3(audioBuf, onProgress);
+}
+
+// meSpeak gives us a WAV ArrayBuffer directly
+async function wavBufToMp3(wavBuf, onProgress){
+  const audioBuf = await decodeToAudioBuffer(wavBuf.slice(0));
+  return audioBufferToMp3(audioBuf, onProgress);
+}
+
+// ── Core Record ───────────────────────────────────────────────────
+let recCount = 0;
+let curMR = null, curChunks = [], curStream = null;
+const bGo=document.getElementById('bGo'), bStop=document.getElementById('bStop');
+const bPrev=document.getElementById('bPrev');
+const progWrap=document.getElementById('progWrap'), progBar=document.getElementById('progBar'), progTxt=document.getElementById('progTxt');
+
+bGo.addEventListener('click', startAll);
+bStop.addEventListener('click', stopAll);
+bPrev.addEventListener('click', togglePreview);
+
+// ── Preview (no recording, no permission) ─────────────────────────
+let previewing = false;
+async function togglePreview(){
+  if(previewing){
+    speechSynthesis.cancel();
+    if(typeof meSpeak !== 'undefined'){ try{ meSpeak.stop(); }catch(e){} }
+    endPreview();
+    return;
+  }
+
+  const text = document.getElementById('txt').value.trim();
+  if(!text){ setS('','กรุณาพิมพ์ข้อความก่อน'); return; }
+
+  speechSynthesis.cancel();
+  previewing = true;
+  bPrev.classList.add('playing');
+  bPrev.textContent = '⏸ STOP PREVIEW';
+  bGo.disabled = true;
+  setS('ok','🔊 กำลังฟังตัวอย่าง (ไม่อัด)...');
+  drawWave('#00ff88', 14);
+
+  const sel = getSelectedVoice();
+  previewing = true;
+  bPrev.classList.add('playing');
+  bPrev.textContent = '⏸ STOP PREVIEW';
+  bGo.disabled = true;
+  setS('ok','🔊 กำลังฟังตัวอย่าง (ไม่อัด)...');
+  drawWave('#00ff88', 14);
+
+  if(sel.engine === 'mespeak'){
+    // robotic preview — just play, no record
+    await ensureMeSpeakVoice(sel.id);
+    const opts = mespeakOpts();
+    meSpeak.speak(text, opts, ()=> endPreview());
+    return;
+  }
+
+  // system voice preview
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  if(sel.engine === 'system' && voices[sel.idx]) u.voice = voices[sel.idx];
+  u.rate  = parseFloat(document.getElementById('rRate').value)  || 1;
+  u.pitch = parseFloat(document.getElementById('rPitch').value) || 1;
+  u.onend = u.onerror = endPreview;
+  speechSynthesis.speak(u);
+}
+
+// Map UI rate/pitch sliders to meSpeak options
+function mespeakOpts(){
+  const rate  = parseFloat(document.getElementById('rRate').value)  || 1;
+  const pitch = parseFloat(document.getElementById('rPitch').value) || 1;
+  return {
+    speed: Math.round(175 * rate),   // eSpeak default 175 wpm
+    pitch: Math.round(50 * pitch),   // eSpeak pitch 0-99, default 50
+    variant: 'm3'                    // a robotic male variant
+  };
+}
+
+function endPreview(){
+  previewing = false;
+  if(typeof meSpeak !== 'undefined'){ try{ meSpeak.stop(); }catch(e){} }
+  bPrev.classList.remove('playing');
+  bPrev.textContent = '🔊 PREVIEW';
+  bGo.disabled = false;
+  stopWave();
+  setS('','พร้อมอัด — กด RECORD');
+}
+
+async function startAll(){
+  const text = document.getElementById('txt').value.trim();
+  if(!text){ setS('','กรุณาพิมพ์ข้อความก่อน'); return; }
+
+  const sel = getSelectedVoice();
+
+  // ── meSpeak path: generate WAV directly → MP3, NO permission ──
+  if(sel.engine === 'mespeak'){
+    bGo.disabled = true;
+    bPrev.disabled = true;
+    setS('spin','⚙ สร้างเสียง robotic...');
+    drawWave('#7c6af5', 14);
+
+    try {
+      await ensureMeSpeakVoice(sel.id);
+      const opts = Object.assign(mespeakOpts(), { rawdata: 'arraybuffer' });
+      const wavBuf = meSpeak.speak(text, opts); // ArrayBuffer of a WAV file
+      stopWave();
+      if(!wavBuf || wavBuf.byteLength < 100){ throw new Error('empty'); }
+      setS('spin','⚙ Encoding MP3...');
+      const mp3 = await wavBufToMp3(wavBuf, pct=>{
+        progWrap.style.display='block';
+        progBar.style.width=Math.round(pct*100)+'%';
+        progTxt.textContent=`Encoding MP3... ${Math.round(pct*100)}%`;
+      });
+      progWrap.style.display='none';
+      addMp3(mp3);
+    } catch(e){
+      stopWave();
+      progWrap.style.display='none';
+      setS('','⚠ สร้างเสียงไม่สำเร็จ — ลองเปิดผ่าน https (GitHub Pages)');
+    }
+    bGo.disabled = false;
+    bPrev.disabled = false;
+    return;
+  }
+
+  // ── system voice path: needs capture (tab/mic) ──
+  if(CAPTURE_MODE === 'none'){
+    setS('','⚠ อัดเสียง System ไม่ได้ — ลองใช้เสียง 🔧 Robotic');
+    return;
+  }
+
+  speechSynthesis.cancel();
+  bGo.disabled = true;
+  bPrev.disabled = true;
+
+  let stream;
+  if(CAPTURE_MODE === 'tab'){
+    setS('','⌛ รอ permission Share Tab Audio...');
+    try {
+      stream = await navigator.mediaDevices.getDisplayMedia({
+        video: false,
+        audio: { suppressLocalAudioPlayback: false, echoCancellation: false, noiseSuppression: false, sampleRate: 44100 }
+      });
+    } catch(e){
+      setS('','✕ ยกเลิก หรือ browser ไม่รองรับ');
+      bGo.disabled = false;
+      bPrev.disabled = false;
+      return;
+    }
+    stream.getVideoTracks().forEach(t=>t.stop());
+  } else {
+    // mic capture (mobile)
+    setS('','⌛ รอ permission ไมโครโฟน...');
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 44100 }
+      });
+    } catch(e){
+      setS('','✕ ไม่ได้รับอนุญาตใช้ไมโครโฟน');
+      bGo.disabled = false;
+      bPrev.disabled = false;
+      return;
+    }
+  }
+
+  curStream = stream;
+  curChunks = [];
+
+  // Record as webm first, then convert to mp3
+  const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+             : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+
+  curMR = new MediaRecorder(stream, { mimeType: mime });
+  curMR.ondataavailable = e => { if(e.data.size > 0) curChunks.push(e.data); };
+  curMR.onstop = encodeToMp3;
+  curMR.start(80);
+
+  running = true;
+  bStop.disabled = false;
+  setS('rec','● REC — กำลังพูด...');
+  drawWave('#ff3b3b', 18);
+
+  const utter = new SpeechSynthesisUtterance(text);
+  const idx = parseInt(vSel.value);
+  if(!isNaN(idx) && voices[idx]) utter.voice = voices[idx];
+  utter.rate  = parseFloat(document.getElementById('rRate').value)  || 1;
+  utter.pitch = parseFloat(document.getElementById('rPitch').value) || 1;
+  utter.onend   = () => setTimeout(stopAll, 400);
+  utter.onerror = () => setTimeout(stopAll, 200);
+  speechSynthesis.speak(utter);
+}
+
+function stopAll(){
+  speechSynthesis.cancel();
+  running = false;
+  if(curMR && curMR.state !== 'inactive') curMR.stop();
+  curStream?.getTracks().forEach(t=>t.stop());
+  bGo.disabled  = false;
+  bStop.disabled = true;
+  bPrev.disabled = false;
+  stopWave();
+  setS('spin','⚙ Encoding MP3...');
+}
+
+async function encodeToMp3(){
+  if(!curChunks.length){ setS('','ไม่มีข้อมูลเสียง'); return; }
+
+  const webmBlob = new Blob(curChunks, { type: 'audio/webm' });
+
+  // Show progress bar
+  progWrap.style.display = 'block';
+  progBar.style.width = '0%';
+  progTxt.textContent = 'Encoding MP3... 0%';
+
+  let mp3Blob;
+  try {
+    mp3Blob = await webmToMp3(webmBlob, pct => {
+      const p = Math.round(pct * 100);
+      progBar.style.width = p + '%';
+      progTxt.textContent = `Encoding MP3... ${p}%`;
+    });
+  } catch(e) {
+    progWrap.style.display = 'none';
+    setS('','⚠ Encode ไม่สำเร็จ — ลองอีกครั้ง');
+    return;
+  }
+
+  progWrap.style.display = 'none';
+  addMp3(mp3Blob);
+}
+
+// shared: add an MP3 blob to the recordings list
+function addMp3(mp3Blob){
+  const kb  = (mp3Blob.size / 1024).toFixed(1);
+  const name = `speech_${String(++recCount).padStart(3,'0')}.mp3`;
+  const url  = URL.createObjectURL(mp3Blob);
+  const list = document.getElementById('dlList');
+  list.querySelector('.empty')?.remove();
+  const item = document.createElement('div');
+  item.className = 'dl-item';
+  item.innerHTML = `
+    <span class="dl-name">🎵 ${name}</span>
+    <span class="dl-meta">${kb} KB · MP3</span>
+    <a href="${url}" download="${name}" class="b-dl">⬇ DL</a>`;
+  list.prepend(item);
+  setS('ok',`✓ MP3 พร้อมแล้ว — ${kb} KB`);
+}
+</script>
+</body>
+</html>
