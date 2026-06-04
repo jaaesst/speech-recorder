@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🎙 Thai Voice Recorder</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg: #f5f2ee;
+  --card: #ffffff;
+  --border: #e0dbd4;
+  --text: #1a1714;
+  --muted: #9b948c;
+  --accent: #d4622a;
+  --accent-light: #fdf0ea;
+  --green: #2a7d4f;
+  --green-light: #eaf5ef;
+  --red: #c0392b;
+  --red-light: #fdf0ef;
+  --shadow: 0 2px 12px rgba(0,0,0,.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Sarabun', sans-serif;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px 40px;
+}
+
+.wrap { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 16px; }
+
+/* Header */
+.header { text-align: center; padding: 8px 0 4px; }
+.header h1 {
+  font-family: 'Space Mono', monospace;
+  font-size: 1.1rem;
+  letter-spacing: .12em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.header p { font-size: .82rem; color: var(--muted); margin-top: 4px; }
+
+/* Card */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.card-label {
+  font-family: 'Space Mono', monospace;
+  font-size: .68rem;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+/* Voice select */
+select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Sarabun', sans-serif;
+  font-size: .95rem;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239b948c' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+select:focus { border-color: var(--accent); }
+
+/* Textarea */
+textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Sarabun', sans-serif;
+  font-size: 1rem;
+  line-height: 1.7;
+  resize: vertical;
+  outline: none;
+}
+textarea:focus { border-color: var(--accent); }
+textarea::placeholder { color: var(--muted); }
+
+/* Rate slider */
+.slider-row {
+  display: flex; align-items: center; gap: 10px; margin-top: 12px;
+}
+.slider-row label {
+  font-family: 'Space Mono', monospace;
+  font-size: .7rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.slider-row input[type=range] {
+  flex: 1; height: 3px;
+  -webkit-appearance: none; appearance: none;
+  background: var(--border); border-radius: 2px; cursor: pointer;
+}
+.slider-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--accent); cursor: pointer;
+}
+.slider-val {
+  font-family: 'Space Mono', monospace;
+  font-size: .75rem; color: var(--accent);
+  min-width: 28px; text-align: right;
+}
+
+/* Steps */
+.steps { display: flex; flex-direction: column; gap: 10px; }
+.step-btn {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  font-family: 'Sarabun', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all .15s;
+  text-align: left;
+}
+.step-btn .icon { font-size: 1.3rem; flex-shrink: 0; }
+.step-btn .label { flex: 1; }
+.step-btn .sub { font-size: .75rem; font-weight: 400; color: inherit; opacity: .7; display: block; margin-top: 1px; }
+
+.btn-capture {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.btn-capture:hover { background: #fbe4d8; }
+.btn-capture.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-speak {
+  background: var(--green-light);
+  border-color: var(--green);
+  color: var(--green);
+}
+.btn-speak:hover { background: #d8f0e4; }
+.btn-speak.speaking {
+  background: var(--green);
+  color: #fff;
+}
+.btn-speak:disabled { opacity: .35; cursor: not-allowed; }
+
+.btn-stop {
+  background: var(--red-light);
+  border-color: var(--red);
+  color: var(--red);
+}
+.btn-stop:hover { background: #fde0de; }
+.btn-stop:disabled { opacity: .35; cursor: not-allowed; }
+
+/* Status bar */
+.statusbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: .72rem;
+  color: var(--muted);
+  min-height: 40px;
+}
+.dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border); flex-shrink: 0;
+  transition: background .2s;
+}
+.dot.rec { background: var(--red); animation: pulse .7s infinite alternate; }
+.dot.ok  { background: var(--green); }
+.dot.warn { background: #e67e22; }
+@keyframes pulse { to { transform: scale(1.6); opacity: .5; } }
+
+/* Volume meter */
+.meter-wrap {
+  height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden;
+}
+.meter-bar {
+  height: 100%; width: 0%; border-radius: 2px;
+  background: linear-gradient(to right, var(--green), var(--accent));
+  transition: width .08s;
+}
+
+/* Recordings list */
+.rec-list { display: flex; flex-direction: column; gap: 8px; }
+.rec-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.rec-name {
+  font-family: 'Space Mono', monospace;
+  font-size: .72rem; color: var(--accent); flex: 1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rec-size { font-family: 'Space Mono', monospace; font-size: .65rem; color: var(--muted); white-space: nowrap; }
+.dl-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent);
+  font-family: 'Space Mono', monospace;
+  font-size: .68rem;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.dl-btn:hover { background: var(--accent-light); }
+.empty { text-align: center; color: var(--muted); font-family: 'Space Mono', monospace; font-size: .72rem; padding: 16px; }
+
+/* Wake lock toggle */
+.wake-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-top: 4px;
+}
+.wake-label { font-size: .85rem; color: var(--muted); }
+.toggle {
+  position: relative; width: 40px; height: 22px; cursor: pointer;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute; inset: 0;
+  background: var(--border); border-radius: 11px;
+  transition: background .2s;
+}
+.toggle input:checked + .toggle-track { background: var(--green); }
+.toggle-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; transition: transform .2s;
+  pointer-events: none;
+}
+.toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
+
+/* How-to tip */
+.tip {
+  background: var(--accent-light);
+  border: 1px solid #f0c4ae;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: .8rem;
+  color: #8a3810;
+  line-height: 1.8;
+}
+.tip strong { color: var(--accent); }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <h1>🎙 Thai Voice Recorder</h1>
+    <p>จับเสียง System Audio · ไม่ต้องใช้ไมค์</p>
+  </div>
+
+  <!-- Voice + Text -->
+  <div class="card">
+    <div class="card-label">เสียงและข้อความ</div>
+    <select id="vSel"><option value="">⏳ กำลังโหลดเสียง...</option></select>
+    <div class="slider-row" style="margin-top:10px;">
+      <label>RATE</label>
+      <input type="range" id="rRate" min=".5" max="2" step=".05" value="1"
+        oninput="document.getElementById('rVal').textContent=parseFloat(this.value).toFixed(2)">
+      <span class="slider-val" id="rVal">1.00</span>
+    </div>
+    <div style="margin-top:12px;">
+      <textarea id="txt" placeholder="พิมพ์ข้อความภาษาไทยที่ต้องการให้พูด...&#10;&#10;ตัวอย่าง: สวัสดีครับ ยินดีต้อนรับสู่รายการของเรา"></textarea>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <div class="card">
+    <div class="card-label">ขั้นตอน</div>
+    <div class="steps">
+
+      <!-- Step 1: Capture -->
+      <button class="step-btn btn-capture" id="btnCapture" onclick="toggleCapture()">
+        <span class="icon">📡</span>
+        <span class="label">
+          ขั้นที่ 1 — เปิด System Audio
+          <span class="sub" id="captureSubLabel">กดเพื่อขอสิทธิ์จับเสียงระบบ</span>
+        </span>
+      </button>
+
+      <!-- Step 2: Speak -->
+      <button class="step-btn btn-speak" id="btnSpeak" onclick="doSpeak()" disabled>
+        <span class="icon">🔊</span>
+        <span class="label">
+          ขั้นที่ 2 — พูด
+          <span class="sub">กดเพื่อให้มือถือพูดข้อความ</span>
+        </span>
+      </button>
+
+      <!-- Step 3: Stop -->
+      <button class="step-btn btn-stop" id="btnStop" onclick="doStop()" disabled>
+        <span class="icon">⏹</span>
+        <span class="label">
+          ขั้นที่ 3 — หยุดและบันทึก
+          <span class="sub">กดเมื่อพูดจบแล้ว</span>
+        </span>
+      </button>
+
+    </div>
+
+    <!-- Status -->
+    <div class="statusbar" style="margin-top:12px;">
+      <div class="dot" id="dot"></div>
+      <span id="sTxt">พร้อมใช้งาน</span>
+    </div>
+    <div class="meter-wrap" id="meterWrap" style="display:none;">
+      <div class="meter-bar" id="meterBar"></div>
+    </div>
+
+    <!-- Wake lock -->
+    <div class="wake-row">
+      <span class="wake-label">📱 จอไม่ดับขณะอัด</span>
+      <label class="toggle">
+        <input type="checkbox" id="wakeLockChk" onchange="toggleWakeLock(this.checked)">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+  </div>
+
+  <!-- Tip -->
+  <div class="tip" id="tipBox">
+    📌 <strong>วิธีใช้บน Android Chrome:</strong><br>
+    กด <strong>ขั้นที่ 1</strong> → Chrome จะถามว่าจะ Share อะไร<br>
+    → เลือก <strong>"Share device audio"</strong> (ไม่ต้อง share หน้าจอ)<br>
+    → กด <strong>ขั้นที่ 2</strong> ให้พูด → กด <strong>ขั้นที่ 3</strong> เสร็จ → โหลด MP3
+  </div>
+
+  <!-- Recordings -->
+  <div class="card">
+    <div class="card-label">ไฟล์ที่บันทึก</div>
+    <div class="rec-list" id="recList">
+      <div class="empty">// ยังไม่มีไฟล์</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+<script>
+// ── State ─────────────────────────────────────────────────────────
+let stream = null;
+let mediaRecorder = null;
+let chunks = [];
+let recCount = 0;
+let wakeLock = null;
+let analyser = null, animFrame = null;
+
+const voices = [];
+const vSel   = document.getElementById('vSel');
+const dot    = document.getElementById('dot');
+const sTxt   = document.getElementById('sTxt');
+
+// ── Voices ────────────────────────────────────────────────────────
+function loadVoices() {
+  const all = speechSynthesis.getVoices();
+  if (!all.length) return;
+  voices.length = 0;
+  all.forEach(v => voices.push(v));
+
+  const th  = all.filter(v => v.lang.startsWith('th'));
+  const oth = all.filter(v => !v.lang.startsWith('th'));
+
+  vSel.innerHTML = '';
+  if (th.length) {
+    const og = document.createElement('optgroup');
+    og.label = '🇹🇭 ภาษาไทย';
+    th.forEach((v, i) => {
+      const o = document.createElement('option');
+      o.value = all.indexOf(v);
+      o.textContent = `${v.name} (${v.lang})`;
+      og.appendChild(o);
+    });
+    vSel.appendChild(og);
+  }
+  if (oth.length) {
+    const og = document.createElement('optgroup');
+    og.label = '🌐 ภาษาอื่น';
+    oth.forEach(v => {
+      const o = document.createElement('option');
+      o.value = all.indexOf(v);
+      o.textContent = `${v.name} (${v.lang})`;
+      og.appendChild(o);
+    });
+    vSel.appendChild(og);
+  }
+  if (!vSel.options.length) {
+    vSel.innerHTML = '<option value="">ไม่พบเสียงในระบบ</option>';
+  }
+}
+loadVoices();
+if (speechSynthesis.onvoiceschanged !== undefined) {
+  speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+// ── Status helpers ────────────────────────────────────────────────
+function setS(cls, msg) {
+  dot.className = 'dot ' + cls;
+  sTxt.textContent = msg;
+}
+
+// ── Wake Lock ─────────────────────────────────────────────────────
+async function toggleWakeLock(on) {
+  if (on) {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => {
+          wakeLock = null;
+          document.getElementById('wakeLockChk').checked = false;
+        });
+      }
+    } catch(e) { console.warn('WakeLock:', e); }
+  } else {
+    if (wakeLock) { await wakeLock.release(); wakeLock = null; }
+  }
+}
+
+// ── Volume meter ──────────────────────────────────────────────────
+function startMeter(srcStream) {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = ctx.createMediaStreamSource(srcStream);
+  analyser  = ctx.createAnalyser();
+  analyser.fftSize = 256;
+  src.connect(analyser);
+
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  const bar  = document.getElementById('meterBar');
+  const wrap = document.getElementById('meterWrap');
+  wrap.style.display = 'block';
+
+  function tick() {
+    analyser.getByteFrequencyData(data);
+    const avg = data.reduce((a, b) => a + b, 0) / data.length;
+    bar.style.width = Math.min(100, avg * 2.5) + '%';
+    animFrame = requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+function stopMeter() {
+  cancelAnimationFrame(animFrame);
+  document.getElementById('meterBar').style.width = '0%';
+  document.getElementById('meterWrap').style.display = 'none';
+}
+
+// ── Step 1: Toggle capture ─────────────────────────────────────────
+async function toggleCapture() {
+  if (stream) {
+    // ปิด stream
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+    stopMeter();
+    document.getElementById('btnCapture').classList.remove('active');
+    document.getElementById('captureSubLabel').textContent = 'กดเพื่อขอสิทธิ์จับเสียงระบบ';
+    document.getElementById('btnSpeak').disabled = true;
+    document.getElementById('btnStop').disabled = true;
+    setS('', 'ปิด System Audio แล้ว');
+    return;
+  }
+
+  setS('warn', '⏳ รอเลือก Share device audio...');
+  try {
+    stream = await navigator.mediaDevices.getDisplayMedia({
+      video: false,
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        sampleRate: 44100
+      }
+    });
+    // ถ้า user share video ด้วย ให้ stop video track ทิ้ง
+    stream.getVideoTracks().forEach(t => t.stop());
+
+    document.getElementById('btnCapture').classList.add('active');
+    document.getElementById('captureSubLabel').textContent = 'กำลังจับเสียงระบบ — กดอีกครั้งเพื่อปิด';
+    document.getElementById('btnSpeak').disabled = false;
+    startMeter(stream);
+    setS('ok', '✓ System Audio พร้อม — กด "พูด" ได้เลย');
+
+    // ถ้า stream หลุดเอง
+    stream.getTracks().forEach(t => {
+      t.onended = () => {
+        stream = null;
+        stopMeter();
+        document.getElementById('btnCapture').classList.remove('active');
+        document.getElementById('captureSubLabel').textContent = 'กดเพื่อขอสิทธิ์จับเสียงระบบ';
+        document.getElementById('btnSpeak').disabled = true;
+        document.getElementById('btnStop').disabled = true;
+        setS('', 'Stream หลุด — กด ขั้นที่ 1 ใหม่');
+      };
+    });
+  } catch(e) {
+    stream = null;
+    setS('', '✕ ยกเลิก หรือ browser ไม่รองรับ');
+  }
+}
+
+// ── Step 2: Speak ─────────────────────────────────────────────────
+function doSpeak() {
+  const text = document.getElementById('txt').value.trim();
+  if (!text) { setS('warn', 'กรุณาพิมพ์ข้อความก่อน'); return; }
+  if (!stream) { setS('warn', 'กด ขั้นที่ 1 ก่อน'); return; }
+
+  speechSynthesis.cancel();
+
+  // เริ่ม record
+  chunks = [];
+  const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+    ? 'audio/webm;codecs=opus'
+    : MediaRecorder.isTypeSupported('audio/webm')
+    ? 'audio/webm' : 'audio/ogg';
+
+  mediaRecorder = new MediaRecorder(stream, { mimeType: mime });
+  mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  mediaRecorder.onstop = encodeToMp3;
+  mediaRecorder.start(100);
+
+  document.getElementById('btnSpeak').classList.add('speaking');
+  document.getElementById('btnStop').disabled = false;
+  document.getElementById('btnSpeak').disabled = true;
+  setS('rec', '● REC — กำลังพูด...');
+
+  // TTS
+  const u = new SpeechSynthesisUtterance(text);
+  const idx = parseInt(vSel.value);
+  if (!isNaN(idx) && voices[idx]) u.voice = voices[idx];
+  u.rate  = parseFloat(document.getElementById('rRate').value) || 1;
+  u.lang  = voices[idx]?.lang || 'th-TH';
+  u.onend   = () => setTimeout(doStop, 500);
+  u.onerror = () => setTimeout(doStop, 200);
+  speechSynthesis.speak(u);
+}
+
+// ── Step 3: Stop ──────────────────────────────────────────────────
+function doStop() {
+  speechSynthesis.cancel();
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  document.getElementById('btnSpeak').classList.remove('speaking');
+  document.getElementById('btnSpeak').disabled = false;
+  document.getElementById('btnStop').disabled = true;
+  setS('spin', '⚙ กำลัง encode MP3...');
+}
+
+// ── Encode webm → MP3 ─────────────────────────────────────────────
+async function encodeToMp3() {
+  if (!chunks.length) { setS('', 'ไม่มีข้อมูลเสียง'); return; }
+
+  const blob   = new Blob(chunks, { type: 'audio/webm' });
+  const arrBuf = await blob.arrayBuffer();
+
+  const tmpCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+  let audioBuf;
+  try {
+    audioBuf = await tmpCtx.decodeAudioData(arrBuf);
+  } catch(e) {
+    await tmpCtx.close();
+    setS('warn', '⚠ decode ไม่ได้ — ลองอีกครั้ง');
+    return;
+  }
+  await tmpCtx.close();
+
+  const sr    = audioBuf.sampleRate;
+  const nCh   = audioBuf.numberOfChannels;
+  const L32   = audioBuf.getChannelData(0);
+  const R32   = nCh > 1 ? audioBuf.getChannelData(1) : L32;
+  const len   = L32.length;
+
+  const toI16 = f => Math.max(-32768, Math.min(32767, Math.round(f * 32767)));
+  const LI = new Int16Array(len), RI = new Int16Array(len);
+  for (let i = 0; i < len; i++) { LI[i] = toI16(L32[i]); RI[i] = toI16(R32[i]); }
+
+  const enc   = new lamejs.Mp3Encoder(2, sr, 128);
+  const parts = [];
+  const BS    = 1152;
+  for (let o = 0; o < len; o += BS) {
+    const buf = enc.encodeBuffer(LI.subarray(o, o + BS), RI.subarray(o, o + BS));
+    if (buf.length) parts.push(new Uint8Array(buf));
+    if (o % (BS * 80) === 0) await new Promise(r => setTimeout(r, 0));
+  }
+  const end = enc.flush();
+  if (end.length) parts.push(new Uint8Array(end));
+
+  const total = parts.reduce((a, b) => a + b.byteLength, 0);
+  const out   = new Uint8Array(total);
+  let pos = 0;
+  for (const p of parts) { out.set(p, pos); pos += p.byteLength; }
+
+  const mp3  = new Blob([out], { type: 'audio/mpeg' });
+  addToList(mp3);
+}
+
+// ── Add to list ───────────────────────────────────────────────────
+function addToList(blob) {
+  recCount++;
+  const name = `voice_${String(recCount).padStart(3,'0')}.mp3`;
+  const url  = URL.createObjectURL(blob);
+  const kb   = (blob.size / 1024).toFixed(1);
+
+  const list = document.getElementById('recList');
+  list.querySelector('.empty')?.remove();
+
+  const item = document.createElement('div');
+  item.className = 'rec-item';
+  item.innerHTML = `
+    <span class="rec-name">🎵 ${name}</span>
+    <span class="rec-size">${kb} KB</span>
+    <a href="${url}" download="${name}" class="dl-btn">⬇ DL</a>`;
+  list.prepend(item);
+
+  setS('ok', `✓ ${name} พร้อมแล้ว (${kb} KB)`);
+}
+</script>
+</body>
+</html>
